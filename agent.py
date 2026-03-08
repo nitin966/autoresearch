@@ -176,6 +176,9 @@ def run_agent(model: str, host: str, initial_prompt: str) -> None:
     print("[agent] Research loop started. Press Ctrl+C to stop.\n")
     step = 0
 
+    last_call: tuple | None = None
+    repeat_count = 0
+
     while True:
         step += 1
         print(f"\n[agent] Step {step} — calling {model} …", flush=True)
@@ -192,16 +195,16 @@ def run_agent(model: str, host: str, initial_prompt: str) -> None:
             break
 
         msg = resp.json()["message"]
-        messages.append(msg)  # append assistant turn verbatim
-
-        if msg.get("content", "").strip():
-            print(f"\n[assistant] {msg['content']}")
-
-        tool_calls = msg.get("tool_calls") or []
 
         # Some models (e.g. qwen2.5-coder via Ollama) emit tool calls as JSON
         # in the content field instead of the tool_calls field.  Detect and
         # normalise that so the rest of the loop works unchanged.
+        # We also track whether the call came from content so we can reply
+        # with the right role (tool role requires a matching tool_call_id;
+        # content-based calls get a plain user message instead).
+        tool_calls = msg.get("tool_calls") or []
+        from_content = False
+
         if not tool_calls:
             content = msg.get("content", "").strip()
             if content.startswith("{"):
@@ -209,13 +212,19 @@ def run_agent(model: str, host: str, initial_prompt: str) -> None:
                     parsed = json.loads(content)
                     if "name" in parsed and "arguments" in parsed:
                         tool_calls = [{"function": parsed}]
-                        # Don't re-print it as assistant text — it's a tool call
-                        pass
+                        from_content = True
                 except json.JSONDecodeError:
                     pass
 
+        messages.append(msg)  # append assistant turn after we've inspected it
+
+        if msg.get("content", "").strip() and not from_content:
+            print(f"\n[assistant] {msg['content']}")
+
         if not tool_calls:
             # Model paused — let the user nudge it or exit
+            last_call = None
+            repeat_count = 0
             print("[agent] No tool calls — agent paused.")
             try:
                 user_input = input("[you] > ").strip()
@@ -234,13 +243,42 @@ def run_agent(model: str, host: str, initial_prompt: str) -> None:
             if isinstance(args, str):
                 args = json.loads(args)
 
+            # Loop detection: same tool+args 3 times in a row → intervene
+            call_key = (name, json.dumps(args, sort_keys=True))
+            if call_key == last_call:
+                repeat_count += 1
+            else:
+                last_call = call_key
+                repeat_count = 1
+
+            if repeat_count >= 3:
+                print(f"[agent] Loop detected ({name} called {repeat_count}x with same args) — injecting intervention.")
+                messages.append({
+                    "role": "user",
+                    "content": (
+                        f"You have called {name} with the same arguments {repeat_count} times "
+                        f"and keep getting the same error. Stop retrying. "
+                        f"Try a completely different approach or ask the user for help."
+                    ),
+                })
+                repeat_count = 0
+                break
+
             args_preview = json.dumps(args)
             print(f"\n[tool:{name}] {args_preview[:120]}{'…' if len(args_preview) > 120 else ''}")
             result = execute_tool(name, args)
             preview = result[:300].replace("\n", " ")
             print(f"[result] {preview}{'…' if len(result) > 300 else ''}")
 
-            messages.append({"role": "tool", "content": result})
+            if from_content:
+                # Model used content-based tool calls; feed result back as a
+                # user message so the model can correlate it correctly.
+                messages.append({
+                    "role": "user",
+                    "content": f"Tool result for {name}({json.dumps(args)}):\n{result}",
+                })
+            else:
+                messages.append({"role": "tool", "content": result})
 
 
 # ---------------------------------------------------------------------------
