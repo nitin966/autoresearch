@@ -41,18 +41,6 @@ If the above commands all work ok, your setup is working and you can go into aut
 
 ## Running the agent
 
-### Option A — Bring your own agent (Claude Code, Codex, etc.)
-
-Spin up Claude Code / Codex / any AI agent in this repo (disable all permissions), then prompt:
-
-```
-Hi have a look at program.md and let's kick off a new experiment! let's do the setup first.
-```
-
-The `program.md` file is essentially a super lightweight "skill".
-
-### Option B — Fully local with Ollama (`agent.py`)
-
 `agent.py` drives the experiment loop using a local [Ollama](https://ollama.com)
 model — no API keys, no internet required.  No new dependencies; it only uses
 `requests` which is already in `pyproject.toml`.
