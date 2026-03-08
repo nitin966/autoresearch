@@ -199,6 +199,21 @@ def run_agent(model: str, host: str, initial_prompt: str) -> None:
 
         tool_calls = msg.get("tool_calls") or []
 
+        # Some models (e.g. qwen2.5-coder via Ollama) emit tool calls as JSON
+        # in the content field instead of the tool_calls field.  Detect and
+        # normalise that so the rest of the loop works unchanged.
+        if not tool_calls:
+            content = msg.get("content", "").strip()
+            if content.startswith("{"):
+                try:
+                    parsed = json.loads(content)
+                    if "name" in parsed and "arguments" in parsed:
+                        tool_calls = [{"function": parsed}]
+                        # Don't re-print it as assistant text — it's a tool call
+                        pass
+                except json.JSONDecodeError:
+                    pass
+
         if not tool_calls:
             # Model paused — let the user nudge it or exit
             print("[agent] No tool calls — agent paused.")
