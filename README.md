@@ -41,13 +41,63 @@ If the above commands all work ok, your setup is working and you can go into aut
 
 ## Running the agent
 
-Simply spin up your Claude/Codex or whatever you want in this repo (and disable all permissions), then you can prompt something like:
+### Option A — Bring your own agent (Claude Code, Codex, etc.)
+
+Spin up Claude Code / Codex / any AI agent in this repo (disable all permissions), then prompt:
 
 ```
 Hi have a look at program.md and let's kick off a new experiment! let's do the setup first.
 ```
 
 The `program.md` file is essentially a super lightweight "skill".
+
+### Option B — Fully local with Ollama (`agent.py`)
+
+`agent.py` is a self-contained agent runner that drives the experiment loop
+automatically using a configurable LLM backend.  No extra dependencies beyond
+what is already in `pyproject.toml` — only the built-in `requests` library is
+used.
+
+**Providers**
+
+| Flag | Backend | Key required |
+|------|---------|--------------|
+| `--provider ollama` *(default)* | Local [Ollama](https://ollama.com) | No |
+| `--provider anthropic` | Anthropic Claude API | Yes (`ANTHROPIC_API_KEY`) |
+| `--provider openai` | OpenAI or any OpenAI-compatible API | Yes (or `"none"` for local) |
+
+**Quick start with Ollama**
+
+```bash
+# 1. Install Ollama — https://ollama.com
+# 2. Pull a model that supports tool/function calling
+ollama pull qwen2.5-coder:14b
+
+# 3. Run the agent (loops indefinitely; Ctrl-C to stop)
+python agent.py
+```
+
+**Other examples**
+
+```bash
+# Different local model
+python agent.py --model llama3.1:70b
+
+# Anthropic Claude
+python agent.py --provider anthropic --model claude-opus-4-6
+
+# OpenAI
+python agent.py --provider openai --model gpt-4o
+
+# LM Studio / vLLM / llama.cpp (OpenAI-compatible)
+python agent.py --provider openai \
+    --base-url http://localhost:1234/v1 \
+    --model my-local-model \
+    --api-key none
+```
+
+**Configuration via environment variables** — copy `.env.example` to `.env` and
+fill in the values you need (or pass everything as CLI flags).
 
 ## Project structure
 
