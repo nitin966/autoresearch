@@ -41,9 +41,15 @@ If the above commands all work ok, your setup is working and you can go into aut
 
 ## Running the agent
 
-`agent.py` drives the experiment loop using a local [Ollama](https://ollama.com)
-model — no API keys, no internet required.  No new dependencies; it only uses
-`requests` which is already in `pyproject.toml`.
+Simply spin up your Claude/Codex or whatever you want in this repo (and disable all permissions), then you can prompt something like:
+
+```
+Hi have a look at program.md and let's kick off a new experiment! let's do the setup first.
+```
+
+The `program.md` file is essentially a super lightweight "skill".
+
+Alternatively, run fully locally via [Ollama](https://ollama.com) using the included `agent.py` — no API keys or internet required:
 
 ```bash
 # 1. Install Ollama — https://ollama.com
@@ -58,8 +64,7 @@ python agent.py --model llama3.1:70b
 python agent.py --host http://192.168.1.5:11434
 ```
 
-`OLLAMA_HOST` and `OLLAMA_MODEL` env vars work as alternatives to CLI flags
-(see `.env.example`).
+`OLLAMA_HOST` and `OLLAMA_MODEL` env vars work as alternatives to CLI flags (see `.env.example`).
 
 ## Project structure
 
