@@ -5,10 +5,6 @@ agent.py — Fully local autonomous research agent via Ollama.
 Drives the experiment loop from program.md using a local Ollama model —
 no API keys, no internet required.
 
-For cloud-based agents (Anthropic Claude, OpenAI Codex, etc.) use them
-directly in this repo as described in the README; they already handle
-tool use natively.
-
 Usage:
   # Default model (qwen2.5-coder:14b)
   python agent.py
