@@ -53,51 +53,25 @@ The `program.md` file is essentially a super lightweight "skill".
 
 ### Option B — Fully local with Ollama (`agent.py`)
 
-`agent.py` is a self-contained agent runner that drives the experiment loop
-automatically using a configurable LLM backend.  No extra dependencies beyond
-what is already in `pyproject.toml` — only the built-in `requests` library is
-used.
-
-**Providers**
-
-| Flag | Backend | Key required |
-|------|---------|--------------|
-| `--provider ollama` *(default)* | Local [Ollama](https://ollama.com) | No |
-| `--provider anthropic` | Anthropic Claude API | Yes (`ANTHROPIC_API_KEY`) |
-| `--provider openai` | OpenAI or any OpenAI-compatible API | Yes (or `"none"` for local) |
-
-**Quick start with Ollama**
+`agent.py` drives the experiment loop using a local [Ollama](https://ollama.com)
+model — no API keys, no internet required.  No new dependencies; it only uses
+`requests` which is already in `pyproject.toml`.
 
 ```bash
 # 1. Install Ollama — https://ollama.com
-# 2. Pull a model that supports tool/function calling
-ollama pull qwen2.5-coder:14b
+# 2. Pull a model with tool/function-calling support
+ollama pull qwen2.5-coder:14b   # default; alternatives: llama3.1:8b, qwen2.5:72b …
 
 # 3. Run the agent (loops indefinitely; Ctrl-C to stop)
 python agent.py
-```
 
-**Other examples**
-
-```bash
-# Different local model
+# Custom model or remote Ollama host
 python agent.py --model llama3.1:70b
-
-# Anthropic Claude
-python agent.py --provider anthropic --model claude-opus-4-6
-
-# OpenAI
-python agent.py --provider openai --model gpt-4o
-
-# LM Studio / vLLM / llama.cpp (OpenAI-compatible)
-python agent.py --provider openai \
-    --base-url http://localhost:1234/v1 \
-    --model my-local-model \
-    --api-key none
+python agent.py --host http://192.168.1.5:11434
 ```
 
-**Configuration via environment variables** — copy `.env.example` to `.env` and
-fill in the values you need (or pass everything as CLI flags).
+`OLLAMA_HOST` and `OLLAMA_MODEL` env vars work as alternatives to CLI flags
+(see `.env.example`).
 
 ## Project structure
 
